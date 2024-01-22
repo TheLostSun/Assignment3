@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Contact List</title>
+</head>
+<body>
+    <div>
+        <input type="text" id="filter-input" placeholder="Filter by name or email">
+        <button id="filter-btn">Filter</button>
+        <button id="download-btn">Download Contacts</button>
+    </div>
+    
+    <div id="contact-list"></div>
+
+    <div>
+        <button id="load-more">Load More</button>
+    </div>
+
+    <script >
+        const contactListDiv = document.getElementById('contact-list');
+const loadMoreBtn = document.getElementById('load-more');
+const filterInput = document.getElementById('filter-input');
+const filterBtn = document.getElementById('filter-btn');
+const downloadBtn = document.getElementById('download-btn');
+let currentPage = 1;
+
+async function fetchContacts(page, filter) {
+    const response = await fetch(`/api/contacts?page=${page}&filter=${filter}`);
+    const data = await response.json();
+    return data.contacts;
+}
+
+function createContactElement(contact) {
+    const contactDiv = document.createElement('div');
+    contactDiv.classList.add('contact');
+    contactDiv.innerHTML = `
+        <h3>${contact.name}</h3>
+        <p>Email: ${contact.email}</p>
+        <hr>
+    `;
+    return contactDiv;
+}
+
+function renderContacts(contacts) {
+    contactListDiv.innerHTML = '';
+    contacts.forEach(contact => {
+        const contactElement = createContactElement(contact);
+        contactListDiv.appendChild(contactElement);
+    });
+}
+
+async function loadContacts() {
+    const filterValue = filterInput.value.trim();
+    const contacts = await fetchContacts(currentPage, filterValue);
+    renderContacts(contacts);
+    currentPage++;
+}
+
+loadMoreBtn.addEventListener('click', loadContacts);
+
+filterBtn.addEventListener('click', () => {
+    currentPage = 1; 
+    loadContacts();
+});
+
+downloadBtn.addEventListener('click', async () => {
+    const filterValue = filterInput.value.trim();
+    const response = await fetch(`/api/download-contacts?filter=${filterValue}`);
+    const blob = await response.blob();
+    
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.download = 'contacts.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+
+loadContacts();
+
+    </script>
+</body>
+</html>
